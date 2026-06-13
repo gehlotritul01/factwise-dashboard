@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FactWise · People Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/ag-grid-community@31.3.2/dist/ag-grid-community.min.js"></script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      /* FactWise palette — extracted from factwise.io */
+      --fw-bg:          #0a0e1a;   /* deep navy page bg */
+      --fw-surface:     #111827;   /* card / panel bg */
+      --fw-surface2:    #1a2235;   /* elevated surfaces */
+      --fw-surface3:    #1f2d45;   /* hover / subtle */
+      --fw-border:      #1e2d42;   /* default border */
+      --fw-border2:     #2a3d58;   /* stronger border */
+      --fw-teal:        #00c49a;   /* primary accent */
+      --fw-teal-dim:    #00c49a22; /* accent fill */
+      --fw-teal-mid:    #00c49a44;
+      --fw-blue:        #3b82f6;   /* secondary accent */
+      --fw-blue-dim:    #3b82f614;
+      --fw-amber:       #f59e0b;
+      --fw-amber-dim:   #f59e0b14;
+      --fw-red:         #ef4444;
+      --fw-green:       #22c55e;
+      --fw-green-dim:   #22c55e14;
+      --fw-purple:      #a78bfa;
+      --fw-purple-dim:  #a78bfa14;
+      --fw-coral:       #fb923c;
+      --fw-coral-dim:   #fb923c14;
+      --fw-text:        #f1f5f9;
+      --fw-text2:       #94a3b8;
+      --fw-text3:       #4a5f78;
+      --fw-radius:      8px;
+      --fw-radius-lg:   12px;
+    }
+
+    html, body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--fw-bg);
+      color: var(--fw-text);
+      min-height: 100vh;
+      font-size: 14px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ════════════════════ LAYOUT ════════════════════ */
+    .layout { display: flex; min-height: 100vh; }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      width: 220px;
+      flex-shrink: 0;
+      background: var(--fw-surface);
+      border-right: 1px solid var(--fw-border);
+      display: flex;
+      flex-direction: column;
+      padding: 0;
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+      z-index: 10;
+    }
+    .sidebar-logo {
+      padding: 20px 20px 18px;
+      border-bottom: 1px solid var(--fw-border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .logo-mark {
+      width: 32px; height: 32px;
+      background: var(--fw-teal);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 700; color: #000;
+    }
+    .logo-text { font-size: 16px; font-weight: 700; color: var(--fw-text); letter-spacing: -0.3px; }
+
+    .sidebar-section {
+      padding: 20px 12px 8px;
+    }
+    .sidebar-label {
+      font-size: 10px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.1em; color: var(--fw-text3);
+      padding: 0 8px; margin-bottom: 6px;
+    }
+    .nav-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 10px;
+      border-radius: var(--fw-radius);
+      cursor: pointer;
+      color: var(--fw-text2);
+      font-size: 13px;
+      font-weight: 450;
+      transition: background 0.15s, color 0.15s;
+      margin-bottom: 2px;
+      text-decoration: none;
+    }
+    .nav-item:hover { background: var(--fw-surface3); color: var(--fw-text); }
+    .nav-item.active {
+      background: var(--fw-teal-dim);
+      color: var(--fw-teal);
+      font-weight: 500;
+    }
+    .nav-item svg { flex-shrink: 0; opacity: 0.8; }
+    .nav-item.active svg { opacity: 1; }
+
+    .sidebar-footer {
+      margin-top: auto;
+      padding: 16px 12px;
+      border-top: 1px solid var(--fw-border);
+    }
+    .user-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 10px;
+      border-radius: var(--fw-radius);
+      cursor: pointer;
+    }
+    .user-row:hover { background: var(--fw-surface3); }
+    .user-avatar {
+      width: 30px; height: 30px; border-radius: 50%;
+      background: var(--fw-teal-mid);
+      color: var(--fw-teal);
+      font-size: 11px; font-weight: 600;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .user-info .user-name { font-size: 12px; font-weight: 500; color: var(--fw-text); }
+    .user-info .user-role { font-size: 11px; color: var(--fw-text3); }
+
+    /* ── Main ── */
+    .main {
+      margin-left: 220px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    /* ── Top bar ── */
+    .topbar {
+      height: 56px;
+      background: var(--fw-surface);
+      border-bottom: 1px solid var(--fw-border);
+      display: flex;
+      align-items: center;
+      padding: 0 24px;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 5;
+    }
+    .topbar-title { font-size: 15px; font-weight: 600; color: var(--fw-text); }
+    .topbar-breadcrumb {
+      font-size: 12px; color: var(--fw-text3);
+      display: flex; align-items: center; gap: 6px;
+    }
+    .topbar-breadcrumb span { color: var(--fw-text2); }
+    .topbar-spacer { flex: 1; }
+    .topbar-badge {
+      font-size: 11px; font-weight: 600;
+      background: var(--fw-teal-dim);
+      color: var(--fw-teal);
+      padding: 4px 10px;
+      border-radius: 20px;
+      border: 1px solid var(--fw-teal-mid);
+    }
+
+    /* ── Page body ── */
+    .page-body { padding: 24px; flex: 1; }
+
+    /* ── Page header ── */
+    .page-header {
+      display: flex; align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      flex-wrap: wrap; gap: 12px;
+    }
+    .page-header h1 {
+      font-size: 20px; font-weight: 700;
+      color: var(--fw-text); letter-spacing: -0.3px;
+    }
+    .page-header p { font-size: 13px; color: var(--fw-text2); margin-top: 3px; }
+    .header-actions { display: flex; gap: 8px; }
+    .btn-ghost {
+      padding: 8px 14px;
+      font-size: 12px; font-weight: 500;
+      border: 1px solid var(--fw-border2);
+      border-radius: var(--fw-radius);
+      background: transparent;
+      color: var(--fw-text2);
+      cursor: pointer;
+      display: flex; align-items: center; gap: 6px;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+    }
+    .btn-ghost:hover { background: var(--fw-surface3); color: var(--fw-text); border-color: var(--fw-border2); }
+    .btn-primary {
+      padding: 8px 16px;
+      font-size: 12px; font-weight: 600;
+      border: none;
+      border-radius: var(--fw-radius);
+      background: var(--fw-teal);
+      color: #000;
+      cursor: pointer;
+      display: flex; align-items: center; gap: 6px;
+      transition: opacity 0.15s;
+    }
+    .btn-primary:hover { opacity: 0.88; }
+
+    /* ── KPI row ── */
+    .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .kpi-card {
+      background: var(--fw-surface);
+      border: 1px solid var(--fw-border);
+      border-radius: var(--fw-radius-lg);
+      padding: 16px 18px;
+      position: relative;
+      overflow: hidden;
+    }
+    .kpi-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+    }
+    .kpi-card.teal::before  { background: var(--fw-teal); }
+    .kpi-card.blue::before  { background: var(--fw-blue); }
+    .kpi-card.green::before { background: var(--fw-green); }
+    .kpi-card.amber::before { background: var(--fw-amber); }
+    .kpi-card.purple::before { background: var(--fw-purple); }
+    .kpi-label {
+      font-size: 11px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.06em; color: var(--fw-text3);
+      margin-bottom: 8px;
+    }
+    .kpi-value {
+      font-size: 28px; font-weight: 700;
+      color: var(--fw-text);
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+      letter-spacing: -0.5px;
+    }
+    .kpi-sub { font-size: 11px; color: var(--fw-text3); margin-top: 5px; }
+    .kpi-icon {
+      position: absolute;
+      top: 14px; right: 14px;
+      opacity: 0.12;
+    }
+
+    /* ── Toolbar ── */
+    .toolbar {
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 12px; flex-wrap: wrap;
+    }
+    .search-wrap { position: relative; }
+    .search-wrap input {
+      background: var(--fw-surface);
+      border: 1px solid var(--fw-border);
+      border-radius: var(--fw-radius);
+      padding: 8px 10px 8px 34px;
+      font-size: 13px;
+      color: var(--fw-text);
+      width: 260px;
+      outline: none;
+      font-family: inherit;
+      transition: border-color 0.15s;
+    }
+    .search-wrap input::placeholder { color: var(--fw-text3); }
+    .search-wrap input:focus { border-color: var(--fw-teal); }
+    .search-wrap svg {
+      position: absolute;
+      left: 10px; top: 50%;
+      transform: translateY(-50%);
+      color: var(--fw-text3);
+      pointer-events: none;
+    }
+    .fw-select {
+      background: var(--fw-surface);
+      border: 1px solid var(--fw-border);
+      border-radius: var(--fw-radius);
+      padding: 8px 12px;
+      font-size: 13px;
+      color: var(--fw-text);
+      outline: none;
+      font-family: inherit;
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+    .fw-select:focus { border-color: var(--fw-teal); }
+    .fw-select option { background: var(--fw-surface2); }
+    .toolbar-spacer { flex: 1; }
+    .row-count {
+      font-size: 12px; color: var(--fw-text3);
+      white-space: nowrap;
+    }
+
+    /* ── Grid container ── */
+    .grid-wrap {
+      border: 1px solid var(--fw-border);
+      border-radius: var(--fw-radius-lg);
+      overflow: hidden;
+    }
+
+    /* ── AG Grid Dark Theme ── */
+    .ag-theme-alpine-dark {
+      --ag-background-color:           #111827;
+      --ag-header-background-color:    #0f1a2b;
+      --ag-odd-row-background-color:   #111827;
+      --ag-row-hover-color:            #1a2d47;
+      --ag-selected-row-background-color: #00c49a1a;
+      --ag-border-color:               #1e2d42;
+      --ag-header-foreground-color:    #64748b;
+      --ag-foreground-color:           #f1f5f9;
+      --ag-secondary-foreground-color: #94a3b8;
+      --ag-font-family:                'Inter', -apple-system, sans-serif;
+      --ag-font-size:                  13px;
+      --ag-cell-horizontal-padding:    14px;
+      --ag-row-height:                 52px;
+      --ag-header-height:              44px;
+      --ag-row-border-color:           #1a2540;
+      --ag-input-focus-border-color:   #00c49a;
+      --ag-range-selection-border-color: #00c49a;
+      --ag-checkbox-checked-color:     #00c49a;
+    }
+    .ag-header-cell-label {
+      font-size: 11px !important;
+      font-weight: 600 !important;
+      text-transform: uppercase !important;
+      letter-spacing: 0.06em !important;
+    }
+    .ag-row { border-bottom: 1px solid #1a2540 !important; }
+    .ag-row:last-child { border-bottom: none !important; }
+
+    /* ── Cell renderers ── */
+    .emp-cell { display: flex; align-items: center; gap: 10px; }
+    .emp-avatar {
+      width: 34px; height: 34px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; flex-shrink: 0;
+    }
+    .emp-name { font-size: 13px; font-weight: 600; color: #f1f5f9; line-height: 1.2; }
+    .emp-pos  { font-size: 11px; color: #4a5f78; line-height: 1.3; margin-top: 1px; }
+
+    .dept-badge {
+      display: inline-block; padding: 3px 9px;
+      border-radius: 20px; font-size: 11px; font-weight: 600;
+      border: 1px solid transparent;
+    }
+    .dept-Engineering { background: #3b82f614; color: #60a5fa; border-color: #3b82f620; }
+    .dept-Marketing   { background: #f59e0b14; color: #fbbf24; border-color: #f59e0b20; }
+    .dept-Sales       { background: #00c49a14; color: #00c49a; border-color: #00c49a20; }
+    .dept-HR          { background: #a78bfa14; color: #c4b5fd; border-color: #a78bfa20; }
+    .dept-Finance     { background: #fb923c14; color: #fdba74; border-color: #fb923c20; }
+
+    .loc-cell { font-size: 12px; color: #64748b; display: flex; align-items: center; gap: 5px; }
+
+    .sal-cell {
+      font-size: 13px; font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      color: #f1f5f9;
+    }
+
+    .rating-wrap { display: flex; align-items: center; gap: 8px; }
+    .rating-track {
+      width: 64px; height: 4px;
+      background: #1e2d42; border-radius: 2px;
+      overflow: hidden; flex-shrink: 0;
+    }
+    .rating-fill { height: 100%; border-radius: 2px; }
+    .rating-num { font-size: 12px; font-variant-numeric: tabular-nums; color: #64748b; min-width: 24px; }
+
+    .status-wrap { display: flex; align-items: center; gap: 6px; }
+    .status-dot  { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+    .dot-active   { background: #22c55e; box-shadow: 0 0 6px #22c55e88; }
+    .dot-inactive { background: #334155; }
+    .status-label { font-size: 12px; font-weight: 500; }
+    .status-active   { color: #22c55e; }
+    .status-inactive { color: #475569; }
+
+    .skill-list { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; padding: 5px 0; }
+    .skill-tag {
+      padding: 2px 7px;
+      background: #1a2540; border: 1px solid #1e2d42;
+      border-radius: 4px; font-size: 11px; color: #64748b;
+    }
+
+    .mgr-cell { font-size: 12px; color: #64748b; }
+    .mgr-none { font-size: 12px; color: #2a3d58; font-style: italic; }
+
+    .proj-badge {
+      display: inline-flex; align-items: center; justify-content: center;
+      min-width: 30px; height: 22px;
+      background: #1a2540; border: 1px solid #1e2d42;
+      border-radius: 6px;
+      font-size: 12px; font-weight: 600;
+      color: #94a3b8;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .date-cell { font-size: 12px; color: #64748b; }
+    .age-cell  { font-size: 13px; color: #94a3b8; font-variant-numeric: tabular-nums; }
+
+    .email-cell {
+      font-size: 12px; color: #00c49a;
+      text-decoration: none;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .email-cell:hover { text-decoration: underline; }
+
+    /* ── Footer ── */
+    .page-footer {
+      padding: 16px 24px;
+      border-top: 1px solid var(--fw-border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .footer-brand {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 12px; color: var(--fw-text3);
+    }
+    .footer-brand .fw-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--fw-teal); }
+    .footer-right { font-size: 11px; color: var(--fw-text3); }
+  </style>
+</head>
+<body>
+
+<div class="layout">
+
+  <!-- ── Sidebar ── -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-mark">F</div>
+      <span class="logo-text">FactWise</span>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Platform</div>
+      <a class="nav-item" href="#">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Overview
+      </a>
+      <a class="nav-item" href="#">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>
+        Requisitions
+      </a>
+      <a class="nav-item" href="#">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        Inquiry to Quote
+      </a>
+      <a class="nav-item" href="#">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+        Purchase Orders
+      </a>
+      <a class="nav-item" href="#">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+        Invoice to Pay
+      </a>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Management</div>
+      <a class="nav-item active" href="#">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        People
+      </a>
+      <a class="nav-item" href="#">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M3 3h18v18H3zM3 9h18M9 21V9"/></svg>
+        Vendors
+      </a>
+      <a class="nav-item" href="#">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        Analytics
+      </a>
+      <a class="nav-item" href="#">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+        Settings
+      </a>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="user-row">
+        <div class="user-avatar">AD</div>
+        <div class="user-info">
+          <div class="user-name">Admin User</div>
+          <div class="user-role">HR Manager</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ── Main ── -->
+  <div class="main">
+
+    <!-- Top bar -->
+    <div class="topbar">
+      <div class="topbar-breadcrumb">
+        Management
+        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+        <span>People</span>
+      </div>
+      <div class="topbar-spacer"></div>
+      <div class="topbar-badge">AG Grid · Client-side</div>
+    </div>
+
+    <!-- Page body -->
+    <div class="page-body">
+
+      <!-- Header -->
+      <div class="page-header">
+        <div>
+          <h1>People Dashboard</h1>
+          <p>Employee performance, compensation, and team structure</p>
+        </div>
+        <div class="header-actions">
+          <button class="btn-ghost" onclick="exportCSV()">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Export CSV
+          </button>
+          <button class="btn-primary">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add Employee
+          </button>
+        </div>
+      </div>
+
+      <!-- KPI row -->
+      <div class="kpi-row" id="kpi-row">
+        <div class="kpi-card teal">
+          <div class="kpi-label">Total Employees</div>
+          <div class="kpi-value" id="kpi-total">—</div>
+          <div class="kpi-sub" id="kpi-active-sub">—</div>
+          <div class="kpi-icon">
+            <svg width="40" height="40" fill="none" stroke="#00c49a" stroke-width="1.5" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </div>
+        </div>
+        <div class="kpi-card blue">
+          <div class="kpi-label">Avg Salary</div>
+          <div class="kpi-value" id="kpi-salary">—</div>
+          <div class="kpi-sub" id="kpi-dept-sub">—</div>
+          <div class="kpi-icon">
+            <svg width="40" height="40" fill="none" stroke="#3b82f6" stroke-width="1.5" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          </div>
+        </div>
+        <div class="kpi-card green">
+          <div class="kpi-label">Avg Performance</div>
+          <div class="kpi-value" id="kpi-rating">—</div>
+          <div class="kpi-sub">out of 5.0</div>
+          <div class="kpi-icon">
+            <svg width="40" height="40" fill="none" stroke="#22c55e" stroke-width="1.5" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          </div>
+        </div>
+        <div class="kpi-card amber">
+          <div class="kpi-label">Projects Done</div>
+          <div class="kpi-value" id="kpi-projects">—</div>
+          <div class="kpi-sub">across team</div>
+          <div class="kpi-icon">
+            <svg width="40" height="40" fill="none" stroke="#f59e0b" stroke-width="1.5" viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          </div>
+        </div>
+        <div class="kpi-card purple">
+          <div class="kpi-label">Departments</div>
+          <div class="kpi-value" id="kpi-depts">—</div>
+          <div class="kpi-sub" id="kpi-loc-sub">—</div>
+          <div class="kpi-icon">
+            <svg width="40" height="40" fill="none" stroke="#a78bfa" stroke-width="1.5" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Toolbar -->
+      <div class="toolbar">
+        <div class="search-wrap">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="search-input" placeholder="Search by name, position, location…" oninput="applyFilters()" />
+        </div>
+        <select class="fw-select" id="dept-filter" onchange="applyFilters()">
+          <option value="">All departments</option>
+          <option>Engineering</option>
+          <option>Marketing</option>
+          <option>Sales</option>
+          <option>HR</option>
+          <option>Finance</option>
+        </select>
+        <select class="fw-select" id="status-filter" onchange="applyFilters()">
+          <option value="">All status</option>
+          <option value="true">Active</option>
+          <option value="false">Inactive</option>
+        </select>
+        <button class="btn-ghost" onclick="clearFilters()" style="padding:8px 12px;font-size:12px;">
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          Clear
+        </button>
+        <div class="toolbar-spacer"></div>
+        <span class="row-count" id="row-count"></span>
+      </div>
+
+      <!-- Grid -->
+      <div class="grid-wrap">
+        <div id="myGrid" class="ag-theme-alpine-dark" style="height:530px;width:100%;"></div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="page-footer">
+      <div class="footer-brand">
+        <div class="fw-dot"></div>
+        FactWise People &amp; Performance · Assessment Dashboard
+      </div>
+      <div class="footer-right">Powered by AG Grid Community 31.3.2</div>
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /layout -->
+
+<script>
+const employees = [
+  {"id":1,"firstName":"John","lastName":"Smith","email":"john.smith@company.com","department":"Engineering","position":"Senior Developer","salary":95000,"hireDate":"2021-03-15","age":32,"location":"New York","performanceRating":4.2,"projectsCompleted":12,"isActive":true,"skills":["JavaScript","React","Node.js"],"manager":"Sarah Johnson"},
+  {"id":2,"firstName":"Emily","lastName":"Davis","email":"emily.davis@company.com","department":"Marketing","position":"Marketing Manager","salary":78000,"hireDate":"2020-07-22","age":29,"location":"Los Angeles","performanceRating":4.5,"projectsCompleted":8,"isActive":true,"skills":["Digital Marketing","SEO","Analytics"],"manager":"Michael Brown"},
+  {"id":3,"firstName":"Michael","lastName":"Brown","email":"michael.brown@company.com","department":"Marketing","position":"VP Marketing","salary":125000,"hireDate":"2019-01-10","age":38,"location":"Los Angeles","performanceRating":4.7,"projectsCompleted":15,"isActive":true,"skills":["Strategy","Leadership","Brand Management"],"manager":null},
+  {"id":4,"firstName":"Sarah","lastName":"Johnson","email":"sarah.johnson@company.com","department":"Engineering","position":"Engineering Manager","salary":115000,"hireDate":"2018-11-05","age":35,"location":"New York","performanceRating":4.6,"projectsCompleted":18,"isActive":true,"skills":["Team Leadership","Architecture","Python"],"manager":"David Wilson"},
+  {"id":5,"firstName":"David","lastName":"Wilson","email":"david.wilson@company.com","department":"Engineering","position":"CTO","salary":180000,"hireDate":"2017-05-12","age":42,"location":"New York","performanceRating":4.8,"projectsCompleted":25,"isActive":true,"skills":["Technical Strategy","Leadership","Cloud Architecture"],"manager":null},
+  {"id":6,"firstName":"Lisa","lastName":"Garcia","email":"lisa.garcia@company.com","department":"Sales","position":"Sales Representative","salary":65000,"hireDate":"2022-02-28","age":26,"location":"Chicago","performanceRating":3.9,"projectsCompleted":6,"isActive":true,"skills":["CRM","Negotiation","Customer Relations"],"manager":"Robert Martinez"},
+  {"id":7,"firstName":"Robert","lastName":"Martinez","email":"robert.martinez@company.com","department":"Sales","position":"Sales Manager","salary":92000,"hireDate":"2020-09-14","age":34,"location":"Chicago","performanceRating":4.3,"projectsCompleted":11,"isActive":true,"skills":["Sales Strategy","Team Management","B2B Sales"],"manager":"Jennifer Lee"},
+  {"id":8,"firstName":"Jennifer","lastName":"Lee","email":"jennifer.lee@company.com","department":"Sales","position":"VP Sales","salary":135000,"hireDate":"2019-06-18","age":40,"location":"Chicago","performanceRating":4.6,"projectsCompleted":16,"isActive":true,"skills":["Strategic Sales","Leadership","Market Analysis"],"manager":null},
+  {"id":9,"firstName":"James","lastName":"Anderson","email":"james.anderson@company.com","department":"HR","position":"HR Specialist","salary":58000,"hireDate":"2021-08-30","age":28,"location":"Austin","performanceRating":4.0,"projectsCompleted":7,"isActive":true,"skills":["Recruitment","Employee Relations","HRIS"],"manager":"Karen White"},
+  {"id":10,"firstName":"Karen","lastName":"White","email":"karen.white@company.com","department":"HR","position":"HR Manager","salary":85000,"hireDate":"2019-12-02","age":36,"location":"Austin","performanceRating":4.4,"projectsCompleted":13,"isActive":true,"skills":["HR Strategy","Policy Development","Leadership"],"manager":null},
+  {"id":11,"firstName":"Alex","lastName":"Thompson","email":"alex.thompson@company.com","department":"Engineering","position":"Junior Developer","salary":72000,"hireDate":"2023-01-16","age":24,"location":"New York","performanceRating":3.8,"projectsCompleted":4,"isActive":true,"skills":["Java","Spring Boot","MySQL"],"manager":"Sarah Johnson"},
+  {"id":12,"firstName":"Maria","lastName":"Rodriguez","email":"maria.rodriguez@company.com","department":"Finance","position":"Financial Analyst","salary":68000,"hireDate":"2021-11-08","age":30,"location":"Miami","performanceRating":4.1,"projectsCompleted":9,"isActive":true,"skills":["Financial Modeling","Excel","SAP"],"manager":"Thomas Clark"},
+  {"id":13,"firstName":"Thomas","lastName":"Clark","email":"thomas.clark@company.com","department":"Finance","position":"Finance Manager","salary":98000,"hireDate":"2018-04-25","age":37,"location":"Miami","performanceRating":4.5,"projectsCompleted":14,"isActive":true,"skills":["Financial Planning","Budget Management","Leadership"],"manager":null},
+  {"id":14,"firstName":"Amanda","lastName":"Taylor","email":"amanda.taylor@company.com","department":"Marketing","position":"Content Specialist","salary":55000,"hireDate":"2022-06-12","age":25,"location":"Los Angeles","performanceRating":3.7,"projectsCompleted":5,"isActive":true,"skills":["Content Writing","Social Media","Adobe Creative"],"manager":"Michael Brown"},
+  {"id":15,"firstName":"Ryan","lastName":"Miller","email":"ryan.miller@company.com","department":"Engineering","position":"DevOps Engineer","salary":88000,"hireDate":"2020-10-19","age":31,"location":"Seattle","performanceRating":4.3,"projectsCompleted":10,"isActive":true,"skills":["AWS","Docker","Kubernetes"],"manager":"Sarah Johnson"},
+  {"id":16,"firstName":"Jessica","lastName":"Moore","email":"jessica.moore@company.com","department":"Sales","position":"Account Executive","salary":75000,"hireDate":"2021-04-03","age":27,"location":"Denver","performanceRating":4.0,"projectsCompleted":8,"isActive":false,"skills":["Account Management","Salesforce","Presentation"],"manager":"Robert Martinez"},
+  {"id":17,"firstName":"Daniel","lastName":"Harris","email":"daniel.harris@company.com","department":"Finance","position":"Senior Accountant","salary":73000,"hireDate":"2019-08-14","age":33,"location":"Miami","performanceRating":4.2,"projectsCompleted":12,"isActive":true,"skills":["Accounting","Tax Preparation","QuickBooks"],"manager":"Thomas Clark"},
+  {"id":18,"firstName":"Nicole","lastName":"Jackson","email":"nicole.jackson@company.com","department":"HR","position":"Recruiter","salary":62000,"hireDate":"2022-09-05","age":29,"location":"Austin","performanceRating":3.9,"projectsCompleted":6,"isActive":true,"skills":["Talent Acquisition","LinkedIn Recruiter","Interviewing"],"manager":"Karen White"},
+  {"id":19,"firstName":"Kevin","lastName":"Wright","email":"kevin.wright@company.com","department":"Engineering","position":"QA Engineer","salary":76000,"hireDate":"2020-12-07","age":30,"location":"Seattle","performanceRating":4.1,"projectsCompleted":11,"isActive":true,"skills":["Test Automation","Selenium","API Testing"],"manager":"Sarah Johnson"},
+  {"id":20,"firstName":"Stephanie","lastName":"Lopez","email":"stephanie.lopez@company.com","department":"Marketing","position":"Digital Marketing Specialist","salary":64000,"hireDate":"2021-12-20","age":26,"location":"Phoenix","performanceRating":3.8,"projectsCompleted":7,"isActive":true,"skills":["Google Ads","Facebook Ads","Email Marketing"],"manager":"Michael Brown"}
+];
+
+let gridApi;
+
+const AVATAR_COLORS = {
+  Engineering: { bg: '#1e3a5f', fg: '#60a5fa' },
+  Marketing:   { bg: '#3d2c0a', fg: '#fbbf24' },
+  Sales:       { bg: '#003d30', fg: '#00c49a' },
+  HR:          { bg: '#2d1f4a', fg: '#c4b5fd' },
+  Finance:     { bg: '#2a1a08', fg: '#fdba74' },
+};
+
+function updateKPIs(data) {
+  const active = data.filter(e => e.isActive).length;
+  const avgSal = data.length ? data.reduce((s, e) => s + e.salary, 0) / data.length : 0;
+  const avgRating = data.length ? data.reduce((s, e) => s + e.performanceRating, 0) / data.length : 0;
+  const totalProj = data.reduce((s, e) => s + e.projectsCompleted, 0);
+  const depts = new Set(data.map(e => e.department)).size;
+  const locs  = new Set(data.map(e => e.location)).size;
+
+  document.getElementById('kpi-total').textContent = data.length;
+  document.getElementById('kpi-active-sub').textContent = `${active} active · ${data.length - active} inactive`;
+  document.getElementById('kpi-salary').textContent = data.length ? '$' + Math.round(avgSal / 1000) + 'k' : '—';
+  document.getElementById('kpi-dept-sub').textContent = `across ${depts} department${depts !== 1 ? 's' : ''}`;
+  document.getElementById('kpi-rating').textContent = data.length ? avgRating.toFixed(2) : '—';
+  document.getElementById('kpi-projects').textContent = totalProj;
+  document.getElementById('kpi-depts').textContent = depts;
+  document.getElementById('kpi-loc-sub').textContent = `${locs} office location${locs !== 1 ? 's' : ''}`;
+}
+
+function applyFilters() {
+  const q = document.getElementById('search-input').value.toLowerCase().trim();
+  const dept = document.getElementById('dept-filter').value;
+  const status = document.getElementById('status-filter').value;
+  const filtered = employees.filter(e => {
+    const fullName = (e.firstName + ' ' + e.lastName).toLowerCase();
+    const matchQ = !q ||
+      fullName.includes(q) ||
+      e.email.toLowerCase().includes(q) ||
+      e.position.toLowerCase().includes(q) ||
+      e.location.toLowerCase().includes(q) ||
+      e.department.toLowerCase().includes(q) ||
+      (e.manager || '').toLowerCase().includes(q);
+    const matchDept = !dept || e.department === dept;
+    const matchStatus = status === '' ? true : e.isActive.toString() === status;
+    return matchQ && matchDept && matchStatus;
+  });
+  gridApi.setGridOption('rowData', filtered);
+  updateKPIs(filtered);
+  document.getElementById('row-count').textContent =
+    `${filtered.length} of ${employees.length} records`;
+}
+
+function clearFilters() {
+  document.getElementById('search-input').value = '';
+  document.getElementById('dept-filter').value = '';
+  document.getElementById('status-filter').value = '';
+  applyFilters();
+}
+
+function exportCSV() {
+  if (gridApi) gridApi.exportDataAsCsv({ fileName: 'factwise_people.csv' });
+}
+
+const columnDefs = [
+  {
+    headerName: 'Employee',
+    field: 'firstName',
+    minWidth: 210,
+    pinned: 'left',
+    comparator: (a, b, nA, nB) =>
+      (nA.data.firstName + nA.data.lastName).localeCompare(nB.data.firstName + nB.data.lastName),
+    cellRenderer: ({ data: e }) => {
+      const { bg, fg } = AVATAR_COLORS[e.department] || { bg: '#1e2d42', fg: '#64748b' };
+      return `<div class="emp-cell">
+        <div class="emp-avatar" style="background:${bg};color:${fg};">${e.firstName[0]}${e.lastName[0]}</div>
+        <div>
+          <div class="emp-name">${e.firstName} ${e.lastName}</div>
+          <div class="emp-pos">${e.position}</div>
+        </div>
+      </div>`;
+    }
+  },
+  {
+    headerName: 'Department',
+    field: 'department',
+    minWidth: 130,
+    cellRenderer: ({ value }) =>
+      `<span class="dept-badge dept-${value}">${value}</span>`
+  },
+  {
+    headerName: 'Location',
+    field: 'location',
+    minWidth: 130,
+    cellRenderer: ({ value }) =>
+      `<div class="loc-cell">
+        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+          <circle cx="12" cy="10" r="3"/>
+        </svg>
+        ${value}
+      </div>`
+  },
+  {
+    headerName: 'Salary',
+    field: 'salary',
+    minWidth: 115,
+    comparator: (a, b) => a - b,
+    cellRenderer: ({ value }) =>
+      `<span class="sal-cell">$${value.toLocaleString()}</span>`
+  },
+  {
+    headerName: 'Performance',
+    field: 'performanceRating',
+    minWidth: 155,
+    comparator: (a, b) => a - b,
+    cellRenderer: ({ value }) => {
+      const pct = (value / 5) * 100;
+      const color = value >= 4.5 ? '#22c55e' : value >= 4.0 ? '#00c49a' : '#f59e0b';
+      return `<div class="rating-wrap">
+        <div class="rating-track">
+          <div class="rating-fill" style="width:${pct}%;background:${color};"></div>
+        </div>
+        <span class="rating-num">${value.toFixed(1)}</span>
+      </div>`;
+    }
+  },
+  {
+    headerName: 'Projects',
+    field: 'projectsCompleted',
+    minWidth: 95,
+    comparator: (a, b) => a - b,
+    cellRenderer: ({ value }) => `<span class="proj-badge">${value}</span>`
+  },
+  {
+    headerName: 'Status',
+    field: 'isActive',
+    minWidth: 100,
+    cellRenderer: ({ value }) => value
+      ? `<div class="status-wrap"><span class="status-dot dot-active"></span><span class="status-label status-active">Active</span></div>`
+      : `<div class="status-wrap"><span class="status-dot dot-inactive"></span><span class="status-label status-inactive">Inactive</span></div>`
+  },
+  {
+    headerName: 'Hire Date',
+    field: 'hireDate',
+    minWidth: 115,
+    cellRenderer: ({ value }) => {
+      const d = new Date(value);
+      return `<span class="date-cell">${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>`;
+    }
+  },
+  {
+    headerName: 'Age',
+    field: 'age',
+    minWidth: 70,
+    comparator: (a, b) => a - b,
+    cellRenderer: ({ value }) => `<span class="age-cell">${value}</span>`
+  },
+  {
+    headerName: 'Skills',
+    field: 'skills',
+    minWidth: 240,
+    sortable: false,
+    cellRenderer: ({ value }) =>
+      `<div class="skill-list">${value.map(s => `<span class="skill-tag">${s}</span>`).join('')}</div>`
+  },
+  {
+    headerName: 'Manager',
+    field: 'manager',
+    minWidth: 150,
+    cellRenderer: ({ value }) => value
+      ? `<span class="mgr-cell">${value}</span>`
+      : `<span class="mgr-none">No direct manager</span>`
+  },
+  {
+    headerName: 'Email',
+    field: 'email',
+    minWidth: 220,
+    cellRenderer: ({ value }) =>
+      `<a href="mailto:${value}" class="email-cell">${value}</a>`
+  }
+];
+
+const gridOptions = {
+  columnDefs,
+  rowData: employees,
+  rowHeight: 52,
+  headerHeight: 44,
+  defaultColDef: {
+    sortable: true,
+    resizable: true,
+    suppressMovable: false,
+    wrapText: false,
+  },
+  animateRows: true,
+  suppressCellFocus: true,
+  enableCellTextSelection: true,
+  rowSelection: 'multiple',
+  onGridReady: ({ api }) => {
+    gridApi = api;
+    updateKPIs(employees);
+    document.getElementById('row-count').textContent =
+      `${employees.length} of ${employees.length} records`;
+  },
+};
+
+agGrid.createGrid(document.getElementById('myGrid'), gridOptions);
+</script>
+</body>
+</html>
